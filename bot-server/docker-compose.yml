@@ -1,0 +1,118 @@
+services:
+  bot-api:
+    build:
+      context: ./bot-api
+    container_name: bot-api
+    environment:
+      TELEGRAM_API_ID: ${TG_API_ID}
+      TELEGRAM_API_HASH: ${TG_API_HASH}
+    command: >
+      telegram-bot-api
+      --local
+      --http-port=8081
+      --dir=/data
+      --temp-dir=/tmp
+    volumes:
+      - ./data/telegram-bot-api:/data
+    tmpfs:
+      - /tmp:size=2G
+    restart: unless-stopped
+    networks:
+      - bot-network
+    ports:
+      - "127.0.0.1:8081:8081"
+
+  redis:
+    image: redis:7-alpine
+    container_name: bot-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy volatile-lru
+    volumes:
+      - ./data/redis:/data
+    restart: unless-stopped
+    networks:
+      - bot-network
+    # ports:
+    #   - "127.0.0.1:6379:6379"
+
+  bot-app:
+    build:
+      context: ./bot-app
+    container_name: bot-app
+    env_file:
+      - .env
+    volumes:
+      - bot-storage:/var/www/html/storage
+    depends_on:
+      redis:
+        condition: service_started
+      bot-api:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - bot-network
+
+
+  queue:
+    build:
+      context: ./bot-app
+    container_name: bot-queue
+    command: php artisan queue:work redis --sleep=3 --tries=3 --timeout=1800 --max-time=3600
+    env_file:
+      - .env
+    volumes:
+      - bot-storage:/var/www/html/storage
+    depends_on:
+      redis:
+        condition: service_started
+      bot-api:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - bot-network
+
+  scheduler:
+    build:
+      context: ./bot-app
+    container_name: bot-scheduler
+    command: >
+      sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
+    env_file:
+      - .env
+    volumes:
+      - bot-storage:/var/www/html/storage
+    depends_on:
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - bot-network
+
+
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: bot-caddy
+    environment:
+      # The bot's address (needs a DNS record pointing at this server).
+      BOT_DOMAIN: ${BOT_DOMAIN:-bot.smkoacademy.ir}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./bot-app/public:/var/www/html/public
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - bot-app
+    restart: unless-stopped
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+
+volumes:
+  bot-storage:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,24 @@
+# --- Personal data & exports: never commit ---
+/smko-export/
+/broken-files.csv
+/bucket-report.csv
+*.sqlite
+*.sqlite-journal
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Local tooling ---
+/.claude/
+
+# --- Bot server runtime data ---
+/bot-server/data/
+/bot-server/bot-app/storage/logs/*
+!/bot-server/bot-app/storage/logs/.gitignore
+/bot-server/bot-app/storage/framework/views/*
+!/bot-server/bot-app/storage/framework/views/.gitignore
+/bot-server/bot-app/vendor/
+/bot-server/bot-app/node_modules/
+/bot-server/bot-app/bootstrap/cache/*.php
