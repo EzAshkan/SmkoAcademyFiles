@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'password.changed' => \App\Http\Middleware\EnsurePasswordChanged::class,
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'library' => \App\Http\Middleware\LibraryAccess::class,
         ]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('library.home'));

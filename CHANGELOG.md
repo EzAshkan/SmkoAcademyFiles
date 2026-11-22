@@ -2,6 +2,13 @@
 
 All notable changes to SMKO Files (the student file library at files.smkoacademy.ir) and its Telegram bot.
 
+## [Unreleased]
+
+### Added
+- **Public mode** (`SMKO_PUBLIC_MODE=true`): a second deployment of the same site where anyone can browse and download without an account; only the admin panel needs a login. Students, folder access, Telegram features and the student import are hidden. Views and downloads are counted anonymously; downloads are limited to 60 per minute per visitor.
+- `smko:make-admin` to create the admin login on a deployment without student accounts.
+- `smko:import-media` to load the export of media.smkoacademy.ir (87 folders, 2,822 files already in the bucket under `smko-media/`).
+
 ## [1.0.0] — 2026-11-19 — Rebuild
 
 The site was rebuilt from scratch so SMKO owns and controls it. All files, folders, students and access were carried over from the previous system with the **same IDs**, so files stay where they are in the ParsPack bucket and the bot's saved Telegram copies keep working.

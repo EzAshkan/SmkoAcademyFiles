@@ -86,10 +86,14 @@ class FolderTree
             ->all();
     }
 
-    public static function canView(User $user, int $folderId): bool
+    public static function canView(?User $user, int $folderId): bool
     {
-        if ($user->is_admin) {
+        // Public mode: everything is open. Admins see everything anyway.
+        if (Mode::isPublic() || $user?->is_admin) {
             return true;
+        }
+        if (! $user) {
+            return false;
         }
 
         $grants = static::grantsFor($user);
@@ -108,12 +112,14 @@ class FolderTree
      *
      * @return int[]
      */
-    public static function entryPoints(User $user): array
+    public static function entryPoints(?User $user): array
     {
         $nodes = static::nodes();
 
-        if ($user->is_admin) {
+        if (Mode::isPublic() || $user?->is_admin) {
             $ids = array_keys(array_filter($nodes, fn ($n) => $n['parent_id'] === null));
+        } elseif (! $user) {
+            $ids = [];
         } else {
             $ids = array_values(array_filter(
                 array_keys(static::grantsFor($user)),

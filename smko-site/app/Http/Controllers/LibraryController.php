@@ -24,7 +24,7 @@ class LibraryController extends Controller
             'recent' => NewFiles::recentFor($request->user()),
             // Folders whose access ends at a set time — shown on the tile.
             'expiries' => \Illuminate\Support\Facades\DB::table('folder_user')
-                ->where('user_id', $request->user()->id)->whereIn('folder_id', $ids)
+                ->where('user_id', $request->user()?->id ?? 0)->whereIn('folder_id', $ids)
                 ->whereNotNull('expires_at')->pluck('expires_at', 'folder_id')
                 ->map(fn ($d) => \Illuminate\Support\Carbon::parse($d))->all(),
             'newIds' => NewFiles::idsFor($request->user()),
@@ -93,7 +93,7 @@ class LibraryController extends Controller
             'url' => route('library.asset', $a),
             'preview_url' => $available ? route('library.preview', $a) : null,
             'download_url' => $available ? route('library.download', $a) : null,
-            'telegram_url' => $available ? route('library.telegram', $a) : null,
+            'telegram_url' => $available && ! \App\Support\Mode::isPublic() ? route('library.telegram', $a) : null,
         ];
     }
 
@@ -164,6 +164,7 @@ class LibraryController extends Controller
         $this->authorizeAsset($request, $asset);
         abort_unless($asset->hasFile(), 404);
 
+        abort_if(\App\Support\Mode::isPublic() || ! $request->user(), 404);
         AssetEvent::record($request->user(), $asset, 'telegram');
 
         $claim = TelegramClaim::create([
@@ -180,8 +181,13 @@ class LibraryController extends Controller
     public function seen(Request $request, Asset $asset)
     {
         $this->authorizeAsset($request, $asset);
-        $recent = AssetEvent::where('user_id', $request->user()->id)->where('asset_id', $asset->id)
-            ->where('type', 'view')->where('created_at', '>', now()->subMinutes(30))->exists();
+        // One view per file per 30 minutes (visitors without an account: per browser session).
+        $sessionKey = 'seen.'.$asset->id;
+        $recent = $request->user()
+            ? AssetEvent::where('user_id', $request->user()->id)->where('asset_id', $asset->id)
+                ->where('type', 'view')->where('created_at', '>', now()->subMinutes(30))->exists()
+            : now()->timestamp - (int) $request->session()->get($sessionKey, 0) < 1800;
+        $request->session()->put($sessionKey, now()->timestamp);
         if (! $recent) {
             AssetEvent::record($request->user(), $asset, 'view');
         }

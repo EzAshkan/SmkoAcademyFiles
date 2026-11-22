@@ -29,16 +29,20 @@ Route::middleware('auth')->group(function () {
     Route::middleware('admin')->get('admin-api/folders', fn () => collect(\App\Support\FolderTree::options())
         ->map(fn ($path, $id) => ['id' => $id, 'path' => $path])->values());
 
-    Route::middleware('password.changed')->group(function () {
-        Route::get('/', [LibraryController::class, 'home'])->name('library.home');
-        Route::get('/dashboard', [LibraryController::class, 'legacyDashboard']);
-        Route::get('/folders/{folder}', [LibraryController::class, 'folder'])->name('library.folder');
-        Route::get('/assets/{asset}', [LibraryController::class, 'asset'])->name('library.asset');
-        Route::get('/assets/{asset}/download', [LibraryController::class, 'download'])->name('library.download');
-        Route::get('/assets/{asset}/preview', [LibraryController::class, 'preview'])->name('library.preview');
-        Route::post('/assets/{asset}/seen', [LibraryController::class, 'seen'])
-            ->middleware('throttle:120,1')->name('library.seen');
-        Route::post('/assets/{asset}/telegram', [LibraryController::class, 'telegram'])
-            ->middleware('throttle:20,1')->name('library.telegram');
-    });
+});
+
+// Student library. In public mode (SMKO_PUBLIC_MODE) it's open to everyone.
+Route::middleware('library')->group(function () {
+    Route::get('/', [LibraryController::class, 'home'])->name('library.home');
+    Route::get('/dashboard', [LibraryController::class, 'legacyDashboard']);
+    Route::get('/folders/{folder}', [LibraryController::class, 'folder'])->name('library.folder');
+    Route::get('/assets/{asset}', [LibraryController::class, 'asset'])->name('library.asset');
+    Route::get('/assets/{asset}/download', [LibraryController::class, 'download'])
+        ->middleware('throttle:60,1')->name('library.download');
+    Route::get('/assets/{asset}/preview', [LibraryController::class, 'preview'])->name('library.preview');
+    Route::post('/assets/{asset}/seen', [LibraryController::class, 'seen'])
+        ->middleware('throttle:120,1')->name('library.seen');
+    // Not available in public mode (needs a student account).
+    Route::post('/assets/{asset}/telegram', [LibraryController::class, 'telegram'])
+        ->middleware('throttle:20,1')->name('library.telegram');
 });

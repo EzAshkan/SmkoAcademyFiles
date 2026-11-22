@@ -16,11 +16,14 @@ class NewFiles
     protected static array $cache = [];
 
     /** Recent files this user may open and hasn't opened yet (newest first). */
-    public static function unseenFor(User $user): Collection
+    public static function unseenFor(?User $user): Collection
     {
-        return static::$cache[$user->id] ??= (function () use ($user) {
-            $seen = DB::table('asset_events')->where('user_id', $user->id)
-                ->where('created_at', '>=', Asset::newSince())->distinct()->pluck('asset_id')->flip();
+        return static::$cache[$user?->id ?? 0] ??= (function () use ($user) {
+            // Visitors without an account (public mode): every recent file counts as new.
+            $seen = $user
+                ? DB::table('asset_events')->where('user_id', $user->id)
+                    ->where('created_at', '>=', Asset::newSince())->distinct()->pluck('asset_id')->flip()
+                : collect();
 
             return Asset::query()
                 ->where('created_at', '>=', Asset::newSince())
@@ -32,13 +35,13 @@ class NewFiles
     }
 
     /** @return array<int, true> asset ids */
-    public static function idsFor(User $user): array
+    public static function idsFor(?User $user): array
     {
         return static::unseenFor($user)->pluck('id')->flip()->map(fn () => true)->all();
     }
 
     /** Number of new files inside each folder (counting everything below it). @return array<int, int> */
-    public static function countsByFolder(User $user): array
+    public static function countsByFolder(?User $user): array
     {
         $counts = [];
         foreach (static::unseenFor($user) as $a) {
@@ -51,7 +54,7 @@ class NewFiles
     }
 
     /** Recently added files for the home page (seen or not), newest first. */
-    public static function recentFor(User $user, int $limit = 12): Collection
+    public static function recentFor(?User $user, int $limit = 12): Collection
     {
         return Asset::query()
             ->where('created_at', '>=', Asset::newSince())

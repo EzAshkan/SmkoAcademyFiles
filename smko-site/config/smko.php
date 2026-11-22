@@ -1,6 +1,10 @@
 <?php
 
 return [
+    // Public library: no student accounts — anyone can browse and download; only the admin
+    // panel needs a login. Students, access, Telegram features and the student import are off.
+    'public_mode' => (bool) env('SMKO_PUBLIC_MODE', false),
+
     // Filesystem disk holding the media (ParsPack object storage, see config/filesystems.php).
     'disk' => env('SMKO_DISK', 'bucket'),
 

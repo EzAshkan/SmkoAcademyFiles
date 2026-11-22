@@ -43,7 +43,7 @@ class AnnouncementResource extends Resource
                 Textarea::make('body')->label('Details (optional)')->rows(4)->maxLength(3500),
                 Select::make('style')->options(Announcement::STYLES)->default('info')->required(),
             ]),
-            Section::make('Who sees it')->schema([
+            Section::make('Who sees it')->visible(fn () => \App\Support\Mode::hasStudents())->schema([
                 Select::make('folder_ids')
                     ->label('Students with access to')
                     ->helperText('Leave empty to reach every student.')
@@ -54,6 +54,7 @@ class AnnouncementResource extends Resource
             Section::make('Where')->columns(2)->schema([
                 Toggle::make('show_banner')->label('Show as a banner on the site')->default(true)->live(),
                 Toggle::make('send_telegram')->label('Send as a Telegram message')
+                    ->visible(fn () => \App\Support\Mode::hasStudents())
                     ->helperText('Sent once, right after saving.')->default(false)
                     ->disabled(fn (?Announcement $record) => (bool) $record?->telegram_sent_at),
                 DateTimePicker::make('starts_at')->label('Banner from')->native(false)->seconds(false)
@@ -83,7 +84,7 @@ class AnnouncementResource extends Resource
                 Action::make('sendTelegram')
                     ->label('Send on Telegram')
                     ->icon('heroicon-o-paper-airplane')
-                    ->visible(fn (Announcement $r) => ! $r->telegram_sent_at)
+                    ->visible(fn (Announcement $r) => \App\Support\Mode::hasStudents() && ! $r->telegram_sent_at)
                     ->requiresConfirmation()
                     ->modalDescription(fn (Announcement $r) => 'This sends the announcement to '.$r->audience()->filter(fn ($u) => $u->telegramChatId())->count().' students on Telegram. It cannot be undone.')
                     ->action(function (Announcement $r) {

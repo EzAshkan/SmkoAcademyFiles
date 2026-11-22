@@ -96,7 +96,7 @@
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M12 12.75l-3.375-3.375M12 12.75l3.375-3.375M12 12.75V3"/></svg>
                                     Download
                                 </a>
-                                <form method="POST" :action="current.telegram_url" target="_blank">
+                                <form method="POST" :action="current.telegram_url" target="_blank" x-show="current.telegram_url">
                                     @csrf
                                     <button class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0088CC] px-4 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-[#0077b3] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2">
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21.94 4.3a1.1 1.1 0 0 0-1.13-.18L2.9 11.1c-.5.2-.83.7-.8 1.24.03.54.4 1 .93 1.13l4.32 1.1 1.67 5.06c.15.45.55.77 1.02.8h.08c.44 0 .85-.25 1.05-.65l1.96-3.86 4.2 3.1c.2.15.45.23.7.23.13 0 .27-.02.4-.07.37-.13.65-.45.73-.83L22.3 5.4c.09-.42-.05-.84-.36-1.1Zm-11.6 10.4-.6 3.07-.92-2.8 8.16-6.23-6.64 5.96Z"/></svg>

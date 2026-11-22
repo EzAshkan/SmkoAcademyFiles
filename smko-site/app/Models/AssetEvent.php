@@ -19,8 +19,9 @@ class AssetEvent extends Model
 
     public static function record(?User $user, Asset $asset, string $type): void
     {
-        if ($user) {
-            static::create(['user_id' => $user->id, 'asset_id' => $asset->id, 'type' => $type]);
+        // Visitors without an account (public mode) are counted anonymously.
+        if ($user || \App\Support\Mode::isPublic()) {
+            static::create(['user_id' => $user?->id, 'asset_id' => $asset->id, 'type' => $type]);
         }
     }
 

@@ -52,7 +52,7 @@ class AssetFormFields
                 ->label('Tell students on Telegram')
                 ->helperText('Students who can open this folder get a message a few minutes after upload.')
                 ->default(false)
-                ->visible(fn (?Asset $record) => ! $record || ! $record->notified_at),
+                ->visible(fn (?Asset $record) => \App\Support\Mode::hasStudents() && (! $record || ! $record->notified_at)),
         ]));
     }
 

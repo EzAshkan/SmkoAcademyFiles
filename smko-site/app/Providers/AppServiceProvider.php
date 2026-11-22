@@ -20,9 +20,13 @@ class AppServiceProvider extends ServiceProvider
         // Announcement banners for the signed-in student (student pages use layouts.app).
         View::composer('layouts.app', function ($view) {
             $user = Auth::user();
-            $view->with('banners', $user
-                ? Announcement::query()->activeBanners()->limit(10)->get()->filter(fn (Announcement $a) => $a->isFor($user))->take(3)->values()
-                : collect());
+            $all = fn () => Announcement::query()->activeBanners()->limit(10)->get();
+            $view->with('banners', match (true) {
+                (bool) $user => $all()->filter(fn (Announcement $a) => $a->isFor($user))->take(3)->values(),
+                // Visitors without an account (public mode): only announcements meant for everyone.
+                \App\Support\Mode::isPublic() => $all()->filter(fn (Announcement $a) => $a->isForEveryone())->take(3)->values(),
+                default => collect(),
+            });
         });
 
         AdminActivity::register();

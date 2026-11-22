@@ -24,6 +24,12 @@ class UsersRelationManager extends RelationManager
 
     protected static ?string $title = 'Access';
 
+    /** Public mode: everything is open, so there's no access list. */
+    public static function canViewForRecord(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): bool
+    {
+        return \App\Support\Mode::hasStudents();
+    }
+
     public static function expiryField(): DateTimePicker
     {
         return DateTimePicker::make('expires_at')

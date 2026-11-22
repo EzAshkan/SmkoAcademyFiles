@@ -32,8 +32,13 @@ class ActivityStats extends StatsOverviewWidget
         $active = User::where('is_admin', false)->where('last_login_at', '>=', $since)->count();
         $changed = User::where('is_admin', false)->where('must_change_password', false)->count();
 
+        $first = \App\Support\Mode::isPublic()
+            ? Stat::make('Library', Asset::count().' files')
+                ->description(\App\Models\Folder::count().' folders · public — no login needed')->icon('heroicon-o-globe-alt')
+            : null;
+
         return [
-            Stat::make('Active students', $active)
+            $first ?? Stat::make('Active students', $active)
                 ->description("of {$students} logged in · {$changed} have set their own password")
                 ->icon('heroicon-o-users'),
             Stat::make('File views', DB::table('asset_events')->where('type', 'view')->where('created_at', '>=', $since)->count())

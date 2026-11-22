@@ -41,6 +41,14 @@
                 </div>
             </div>
         </nav>
+    @else
+        @if (\App\Support\Mode::isPublic())
+            <nav class="border-b border-gray-100 bg-white">
+                <div class="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+                    <a href="{{ route('library.home') }}" class="shrink-0"><x-logo class="h-8 w-auto text-gray-800" /></a>
+                </div>
+            </nav>
+        @endif
     @endauth
 
     @hasSection('header')

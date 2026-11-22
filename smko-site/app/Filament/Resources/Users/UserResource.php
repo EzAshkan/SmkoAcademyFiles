@@ -26,6 +26,12 @@ class UserResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    /** Public mode has no student accounts. */
+    public static function canAccess(): bool
+    {
+        return \App\Support\Mode::hasStudents() && parent::canAccess();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return UserForm::configure($schema);

@@ -123,3 +123,24 @@ SMKO_NEW_DAYS=14
 
 The bot server needs its updated code (`../bot-server/bot-app`: new `/api/internal/send` endpoint, webhook secret check turned back on). After deploying it, register the webhook **with** the secret:
 `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://bot.smkoacademy.ir/api/telegram/webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>`
+
+## Public mode (second deployment, e.g. media.smkoacademy.ir)
+
+Same code, one setting: `SMKO_PUBLIC_MODE=true` in `.env`.
+
+- Anyone can browse, preview and download — no student accounts, no login.
+- The **admin panel still needs a login** (otherwise anyone could upload or delete).
+- Hidden: Students, folder Access, Telegram ("Get on Telegram", new-file alerts, Telegram announcements), Excel student import.
+- Kept: folders, files, background uploads, duplicate detection, copy/move, banners (for everyone), statistics (anonymous), monitoring, activity log.
+- Downloads are limited to 60 per minute per visitor to protect the server.
+
+Setup on its own database:
+
+```bash
+php artisan migrate --force
+php artisan smko:make-admin 0912xxxxxxx "Your name"      # asks for the password (hidden)
+php artisan smko:import-media /path/to/media-export.json  # folders + files from media.smkoacademy.ir
+php artisan smko:sync-hashes                               # fingerprints for duplicate detection
+```
+
+`media-export.json` was read from the public pages of media.smkoacademy.ir: 87 folders and 2,822 files, all already in the bucket under `smko-media/` (nothing is copied). Files whose object isn't in the bucket are skipped (`--include-missing` imports them anyway, shown as unavailable).

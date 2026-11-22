@@ -35,6 +35,9 @@ class UploadController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
         ]);
+        if (\App\Support\Mode::isPublic()) {
+            $data['notify'] = false; // no Telegram alerts in public mode
+        }
         $title = trim($data['title'] ?? '') ?: AssetFiles::titleFromFilename($data['filename']);
         $description = trim($data['description'] ?? '') ?: null;
         $folder = Folder::findOrFail($data['folder_id']);
