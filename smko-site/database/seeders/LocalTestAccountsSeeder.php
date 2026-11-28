@@ -10,8 +10,8 @@ use Illuminate\Database\Seeder;
  * LOCAL TESTING ONLY — never run on the live server.
  * php artisan db:seed --class=LocalTestAccountsSeeder
  *
- *   test-admin   / smko   (admin)
- *   test-student / smko   (access to "Adults" and "Teens / Timezones 1")
+ *   9000001 / smko   (admin)
+ *   9000002 / smko   (access to "Adults" and "Teens / Timezones 1")
  */
 class LocalTestAccountsSeeder extends Seeder
 {
@@ -23,11 +23,11 @@ class LocalTestAccountsSeeder extends Seeder
             return;
         }
 
-        User::updateOrCreate(['phone' => 'test-admin'], [
+        User::updateOrCreate(['phone' => '9000001'], [
             'name' => 'Test Admin', 'password' => User::DEFAULT_PASSWORD, 'is_admin' => true, 'must_change_password' => false,
         ]);
 
-        $student = User::updateOrCreate(['phone' => 'test-student'], [
+        $student = User::updateOrCreate(['phone' => '9000002'], [
             'name' => 'Test Student', 'password' => User::DEFAULT_PASSWORD, 'is_admin' => false, 'must_change_password' => false,
         ]);
 

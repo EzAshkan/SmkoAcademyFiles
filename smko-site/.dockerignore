@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+node_modules
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/private/*
+storage/app/upload-tmp
+storage/app/upload-chunks
+storage/app/*.json
+storage/app/*.txt
+database/*.sqlite*
+tests
+.phpunit.cache

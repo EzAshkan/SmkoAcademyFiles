@@ -49,8 +49,8 @@ class AssetFormFields
             Textarea::make('description')->rows(3),
             TextInput::make('sort_order')->numeric()->default(0)->label('Position'),
             \Filament\Forms\Components\Toggle::make('notify')
-                ->label('Tell students on Telegram')
-                ->helperText('Students who can open this folder get a message a few minutes after upload.')
+                ->label('Tell teachers on Telegram')
+                ->helperText('Teachers who can open this folder get a message a few minutes after upload.')
                 ->default(false)
                 ->visible(fn (?Asset $record) => \App\Support\Mode::hasStudents() && (! $record || ! $record->notified_at)),
         ]));

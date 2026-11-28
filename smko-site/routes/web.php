@@ -25,6 +25,15 @@ Route::middleware('auth')->group(function () {
         Route::post('{upload}/complete', 'complete');
         Route::delete('{upload}', 'cancel');
     });
+    // Download a database backup (admins only; name must be one of the listed backups).
+    Route::middleware('admin')->get('admin-api/backups/{name}', function (string $name) {
+        $b = \App\Support\Backups::list()->firstWhere('name', $name);
+        abort_unless($b, 404);
+        \App\Models\AdminLog::add('downloaded', 'backup', null, 'Downloaded backup '.$name);
+
+        return response()->download($b['path'], $name);
+    })->where('name', '[A-Za-z0-9_.-]+\.zip')->name('admin.backups.download');
+
     // Folder list for the upload panel's "where should these go?" picker.
     Route::middleware('admin')->get('admin-api/folders', fn () => collect(\App\Support\FolderTree::options())
         ->map(fn ($path, $id) => ['id' => $id, 'path' => $path])->values());
@@ -35,6 +44,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware('library')->group(function () {
     Route::get('/', [LibraryController::class, 'home'])->name('library.home');
     Route::get('/dashboard', [LibraryController::class, 'legacyDashboard']);
+    Route::get('/search', [LibraryController::class, 'search'])->middleware('throttle:60,1')->name('library.search');
     Route::get('/folders/{folder}', [LibraryController::class, 'folder'])->name('library.folder');
     Route::get('/assets/{asset}', [LibraryController::class, 'asset'])->name('library.asset');
     Route::get('/assets/{asset}/download', [LibraryController::class, 'download'])

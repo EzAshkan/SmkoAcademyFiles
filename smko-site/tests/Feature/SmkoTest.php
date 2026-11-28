@@ -26,7 +26,9 @@ class SmkoTest extends TestCase
         parent::setUp();
         FolderTree::flush();
         \App\Support\NewFiles::flush();
-        config(['smko.telegram.internal_token' => 'test-internal-token', 'smko.prefix' => 'downloads']);
+        config(['smko.telegram.internal_token' => 'test-internal-token', 'smko.prefix' => 'downloads',
+            // Most tests check the direct-bucket links; streaming is tested separately.
+            'smko.proxy_previews' => false, 'smko.bucket_forces_attachment' => false]);
         Storage::fake('bucket');
         Storage::disk('bucket')->buildTemporaryUrlsUsing(fn ($path) => "https://bucket.test/{$path}?signed=1");
 
@@ -48,7 +50,7 @@ class SmkoTest extends TestCase
     {
         $this->student(['must_change_password' => true]);
 
-        $this->post('/login', ['phone' => '5551234', 'password' => 'smko'])->assertRedirect(route('library.home'));
+        $this->post('/login', ['phone' => '5551234', 'password' => 'smko'])->assertRedirect(route('password.edit'));
         $this->get('/')->assertRedirect(route('password.edit'));
 
         // "smko" is not accepted as the new password.
@@ -56,6 +58,15 @@ class SmkoTest extends TestCase
 
         $this->put('/password', ['password' => 'my-secret', 'password_confirmation' => 'my-secret'])->assertRedirect(route('library.home'));
         $this->get('/')->assertOk();
+    }
+
+    public function test_persian_and_arabic_digits_log_in(): void
+    {
+        $this->student(['phone' => '09123456789', 'must_change_password' => false]);
+        $this->post('/login', ['phone' => '۰۹۱۲ ۳۴۵ ۶۷۸۹', 'password' => 'smko'])->assertRedirect(route('library.home'));
+        $this->assertAuthenticated();
+        auth()->logout();
+        $this->post('/login', ['phone' => '٠٩١٢٣٤٥٦٧٨٩', 'password' => 'smko'])->assertRedirect(route('library.home'));
     }
 
     public function test_wrong_password_is_rate_limited(): void
@@ -66,7 +77,8 @@ class SmkoTest extends TestCase
         }
         // Even the right password is refused while locked out.
         $this->post('/login', ['phone' => '5551234', 'password' => 'smko'])->assertSessionHasErrors('phone');
-        $this->assertStringStartsWith('Too many attempts', session('errors')->first('phone'));
+        $this->assertStringStartsWith('Too many tries', session('errors')->first('phone'));
+        $this->assertGreaterThan(0, session('lockout_seconds'));
         $this->assertGuest();
     }
 
@@ -206,6 +218,7 @@ class SmkoTest extends TestCase
         $this->assertSame('123456789', \App\Support\TelegramRelay::$sent[0]['chat_id']);
         $this->assertStringContainsString('Track 1.5', \App\Support\TelegramRelay::$sent[0]['text']);
         $this->assertNotNull($this->track->fresh()->notified_at);
+        $this->assertDatabaseHas('telegram_sends', ['kind' => 'new_files', 'recipients' => 1, 'failed' => false]);
 
         // Nothing is sent twice.
         $this->artisan('smko:notify-new-files')->assertSuccessful();
@@ -264,6 +277,44 @@ class SmkoTest extends TestCase
 
         // Students can't use the upload API.
         $this->actingAs($this->student(['phone' => '111']))->postJson('/admin-api/uploads/check', [])->assertForbidden();
+    }
+
+    public function test_previews_and_downloads_stream_through_the_site(): void
+    {
+        config(['smko.proxy_previews' => true, 'smko.bucket_forces_attachment' => true]);
+        Storage::disk('bucket')->put('downloads/'.$this->track->id.'.mp3', 'ID3-audio-bytes');
+        $u = $this->student();
+        $u->folders()->attach($this->adults);
+
+        $preview = $this->actingAs($u)->get(route('library.preview', $this->track));
+        $preview->assertOk()->assertHeader('Content-Type', 'audio/mpeg');
+        $this->assertStringStartsWith('inline;', $preview->headers->get('Content-Disposition'));
+        $this->assertSame('ID3-audio-bytes', $preview->streamedContent());
+
+        $download = $this->get(route('library.download', $this->track));
+        $this->assertStringStartsWith('attachment;', $download->headers->get('Content-Disposition'));
+        $this->assertSame('ID3-audio-bytes', $download->streamedContent());
+
+        // Traffic through the server is counted for the dashboard.
+        $this->assertSame(15, (int) \Illuminate\Support\Facades\DB::table('traffic_daily')->where('kind', 'download')->value('bytes'));
+        $this->assertSame(1, (int) \Illuminate\Support\Facades\DB::table('traffic_daily')->where('kind', 'preview')->value('hits'));
+    }
+
+    public function test_backups_keep_only_the_newest(): void
+    {
+        $dir = storage_path('framework/testing/backups');
+        @mkdir($dir, 0777, true);
+        array_map('unlink', glob($dir.'/*') ?: []);
+        config(['smko.backups.path' => $dir, 'smko.backups.keep' => 14, 'app.name' => 'SMKO Files']);
+        foreach (range(1, 16) as $i) {
+            $f = $dir."/smko-files-2026-01-{$i}.zip";
+            file_put_contents($f, 'x');
+            touch($f, now()->subDays(20 - $i)->timestamp);
+        }
+        $this->assertSame(2, \App\Support\Backups::prune());
+        $this->assertCount(14, \App\Support\Backups::list());
+        $this->assertSame('smko-files-2026-01-16.zip', \App\Support\Backups::latest()['name']);
+        array_map('unlink', glob($dir.'/*') ?: []);
     }
 
     public function test_student_without_access_cannot_download(): void
@@ -339,7 +390,10 @@ class SmkoTest extends TestCase
         $this->get('/admin/announcements')->assertOk();
         $this->get('/admin/announcements/create')->assertOk();
         $this->get('/admin/admin-logs')->assertOk();
-        foreach ([\App\Filament\Widgets\SystemHealth::class, \App\Filament\Widgets\ActivityStats::class,
+        foreach ([\App\Filament\Widgets\BackupStatus::class, \App\Filament\Widgets\OnlineNow::class,
+            \App\Filament\Widgets\TrafficOverview::class, \App\Filament\Widgets\BucketUsage::class,
+            \App\Filament\Widgets\TelegramActivity::class,
+            \App\Filament\Widgets\SystemHealth::class, \App\Filament\Widgets\ActivityStats::class,
             \App\Filament\Widgets\ActivityChart::class, \App\Filament\Widgets\TopFiles::class] as $widget) {
             \Livewire\Livewire::test($widget)->assertOk();
         }

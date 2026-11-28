@@ -21,12 +21,40 @@ class TelegramRelay
      * @param  array<int, array{chat_id:string, text:string, button_text?:string, button_url?:string}>  $messages
      * @return int number queued on the bot server
      */
-    public static function send(array $messages): int
+    public static function send(array $messages, string $kind = 'message', ?string $label = null): int
     {
         $messages = array_values(array_filter($messages, fn ($m) => ! empty($m['chat_id']) && ! empty($m['text'])));
         if (! $messages) {
             return 0;
         }
+
+        try {
+            $queued = static::deliver($messages);
+            static::log($kind, $label, count($messages), $queued);
+
+            return $queued;
+        } catch (\Throwable $e) {
+            static::log($kind, $label, count($messages), 0, $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /** Recorded for the dashboard's "Telegram messages" card. */
+    protected static function log(string $kind, ?string $label, int $recipients, int $queued, ?string $error = null): void
+    {
+        try {
+            \Illuminate\Support\Facades\DB::table('telegram_sends')->insert([
+                'kind' => $kind, 'label' => $label ? mb_substr($label, 0, 255) : null,
+                'recipients' => $recipients, 'queued' => $queued,
+                'failed' => $error !== null, 'error' => $error ? mb_substr($error, 0, 300) : null,
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable) {
+        }
+    }
+
+    protected static function deliver(array $messages): int
+    {
         foreach ($messages as &$m) {
             $m['text'] = mb_substr($m['text'], 0, 4000);
             // Telegram refuses buttons pointing at localhost.

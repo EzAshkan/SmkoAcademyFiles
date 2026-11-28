@@ -35,7 +35,7 @@ class SendAnnouncement implements ShouldQueue
             ->map(fn ($u) => ['chat_id' => $u->telegramChatId(), 'text' => $text, 'button_text' => 'Open SMKO Files', 'button_url' => route('library.home')])
             ->values()->all();
 
-        $queued = TelegramRelay::send($messages);
+        $queued = TelegramRelay::send($messages, 'announcement', $a->title);
         $a->forceFill(['telegram_sent_at' => now(), 'telegram_sent_count' => $queued ?: count($messages)])->save();
     }
 }

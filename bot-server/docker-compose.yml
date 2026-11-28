@@ -92,8 +92,8 @@ services:
     image: caddy:2.8-alpine
     container_name: bot-caddy
     environment:
-      # The bot's address (needs a DNS record pointing at this server).
-      BOT_DOMAIN: ${BOT_DOMAIN:-bot.smkoacademy.ir}
+      # Addresses this bot answers on (each needs a DNS record pointing at this server).
+      BOT_DOMAINS: ${BOT_DOMAINS:-bot.smkoacademy.ir}
     ports:
       - "80:80"
       - "443:443"

@@ -34,15 +34,15 @@ class AdminActivity
         });
         Asset::deleted(fn (Asset $a) => AdminLog::add('deleted', 'file', $a->id, 'Deleted file "'.$a->name.'"'));
 
-        User::created(fn (User $u) => AdminLog::add('created', 'student', $u->id, 'Added student '.$u->name.' ('.$u->phone.')'));
+        User::created(fn (User $u) => AdminLog::add('created', 'student', $u->id, 'Added teacher '.$u->name.' ('.$u->phone.')'));
         User::updated(function (User $u) {
             $changes = array_keys(array_diff_key($u->getChanges(), ['updated_at' => 1, 'remember_token' => 1, 'last_login_at' => 1, 'login_count' => 1]));
             if (! $changes) {
                 return;
             }
-            $what = in_array('password', $changes, true) ? 'Reset password of' : 'Edited student';
+            $what = in_array('password', $changes, true) ? 'Reset password of' : 'Edited teacher';
             AdminLog::add('updated', 'student', $u->id, $what.' '.$u->name.' ('.implode(', ', array_diff($changes, ['password'])).')');
         });
-        User::deleted(fn (User $u) => AdminLog::add('deleted', 'student', $u->id, 'Deleted student '.$u->name.' ('.$u->phone.')'));
+        User::deleted(fn (User $u) => AdminLog::add('deleted', 'student', $u->id, 'Deleted teacher '.$u->name.' ('.$u->phone.')'));
     }
 }

@@ -6,4 +6,5 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::command('smko:notify-new-files')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('smko:health')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('queue:prune-failed --hours=168')->daily();
+Schedule::command('smko:backup')->cron('0 3 */'.max(1, (int) config('smko.backups.every_days')).' * *')->withoutOverlapping();
 Schedule::call(fn () => \Illuminate\Support\Facades\DB::table('telegram_claims')->where('expires_at', '<', now()->subDay())->delete())->daily();

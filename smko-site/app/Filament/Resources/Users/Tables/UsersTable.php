@@ -27,7 +27,7 @@ class UsersTable
             ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
-                TextColumn::make('phone')->label('Phone / login')->searchable(),
+                TextColumn::make('phone')->label('Username')->searchable(),
                 TextColumn::make('folders_count')->counts('folders')->label('Folders')->sortable(),
                 IconColumn::make('must_change_password')->label('Own password')->boolean()
                     ->trueIcon('heroicon-o-clock')->falseIcon('heroicon-o-check-circle')
@@ -83,9 +83,9 @@ class UsersTable
                                 ]]);
                             }
                             \App\Models\AdminLog::add('granted', 'access', (int) $data['folder_id'],
-                                'Gave access to '.FolderTree::path((int) $data['folder_id']).' for '.$records->count().' student(s)'
+                                'Gave access to '.FolderTree::path((int) $data['folder_id']).' for '.$records->count().' teacher(s)'
                                 .(! empty($data['expires_at']) ? ' until '.$data['expires_at'] : ''));
-                            Notification::make()->title('Access given to '.$records->count().' students')->success()->send();
+                            Notification::make()->title('Access given to '.$records->count().' teachers')->success()->send();
                         })
                         ->deselectRecordsAfterCompletion(),
                     BulkAction::make('revoke')
@@ -97,7 +97,7 @@ class UsersTable
                             foreach ($records as $u) {
                                 $u->folders()->detach($data['folder_id']);
                             }
-                            Notification::make()->title('Access removed for '.$records->count().' students')->success()->send();
+                            Notification::make()->title('Access removed for '.$records->count().' teachers')->success()->send();
                         })
                         ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),

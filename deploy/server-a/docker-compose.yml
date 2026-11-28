@@ -1,0 +1,120 @@
+# SMKO Files + SMKO Media on Server A, behind the existing Traefik (network traefik_proxy).
+#   files  → FILES_DOMAIN  (students log in)            env: files.env
+#   media  → MEDIA_DOMAIN  (public, SMKO_PUBLIC_MODE)   env: media.env
+# Own MariaDB (smko-files-db) — the academy's database is not touched.
+# Start / update:  docker compose up -d --build
+
+x-app: &app
+  image: smko-site:local
+  restart: unless-stopped
+  labels: &nolabels
+    com.centurylinklabs.watchtower.enable: "false"
+  depends_on:
+    db:
+      condition: service_healthy
+  networks: [internal]
+
+services:
+  db:
+    image: mariadb:11
+    container_name: smko-files-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    labels: *nolabels
+    networks: [internal]
+
+  # ---------- files.smkoacademy.ir ----------
+  files-web:
+    <<: *app
+    build:
+      context: ../../smko-site
+      dockerfile: docker/Dockerfile
+    container_name: smko-files-web
+    command: ["web"]
+    env_file: files.env
+    volumes: [files-storage:/var/www/html/storage, ./backups/files:/var/www/html/storage/app/backups]
+    networks: [internal, traefik_proxy]
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+      traefik.enable: "true"
+      traefik.docker.network: traefik_proxy
+      traefik.http.routers.smko-files.rule: Host(`${FILES_DOMAIN:?set FILES_DOMAIN}`) || Host(`${FILES_ALT_DOMAIN:-new.smkoacademy.ir}`)
+      traefik.http.routers.smko-files.entrypoints: websecure
+      traefik.http.routers.smko-files.tls: "true"
+      traefik.http.services.smko-files.loadbalancer.server.port: "80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/up >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  files-worker:
+    <<: *app
+    container_name: smko-files-worker
+    command: ["worker"]
+    env_file: files.env
+    volumes: [files-storage:/var/www/html/storage, ./backups/files:/var/www/html/storage/app/backups]
+
+  files-scheduler:
+    <<: *app
+    container_name: smko-files-scheduler
+    command: ["scheduler"]
+    env_file: files.env
+    volumes: [files-storage:/var/www/html/storage, ./backups/files:/var/www/html/storage/app/backups]
+
+  # ---------- media.smkoacademy.ir (public) ----------
+  media-web:
+    <<: *app
+    container_name: smko-media-web
+    command: ["web"]
+    env_file: media.env
+    volumes: [media-storage:/var/www/html/storage, ./backups/media:/var/www/html/storage/app/backups]
+    networks: [internal, traefik_proxy]
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+      traefik.enable: "true"
+      traefik.docker.network: traefik_proxy
+      traefik.http.routers.smko-media.rule: Host(`${MEDIA_DOMAIN:?set MEDIA_DOMAIN}`) || Host(`${MEDIA_ALT_DOMAIN:-new-media.smkoacademy.ir}`)
+      traefik.http.routers.smko-media.entrypoints: websecure
+      traefik.http.routers.smko-media.tls: "true"
+      traefik.http.services.smko-media.loadbalancer.server.port: "80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/up >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  media-worker:
+    <<: *app
+    container_name: smko-media-worker
+    command: ["worker"]
+    env_file: media.env
+    volumes: [media-storage:/var/www/html/storage, ./backups/media:/var/www/html/storage/app/backups]
+
+  media-scheduler:
+    <<: *app
+    container_name: smko-media-scheduler
+    command: ["scheduler"]
+    env_file: media.env
+    volumes: [media-storage:/var/www/html/storage, ./backups/media:/var/www/html/storage/app/backups]
+
+volumes:
+  db-data:
+  files-storage:
+  media-storage:
+
+networks:
+  internal:
+  traefik_proxy:
+    external: true

@@ -13,7 +13,7 @@ class TopFiles extends TableWidget
 {
     protected static bool $isLazy = false;
 
-    protected static ?int $sort = 4;
+    protected static ?int $sort = 9;
 
     protected int|string|array $columnSpan = 'full';
 

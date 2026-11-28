@@ -92,7 +92,7 @@ class CopyMoveActions
                     'Moved'))
                 ->deselectRecordsAfterCompletion(),
             BulkAction::make('copyFolders')->label('Copy to…')->icon('heroicon-o-document-duplicate')
-                ->modalDescription('Copies the folders with everything inside. Files reuse the stored files — nothing is uploaded again. Student access is not copied.')
+                ->modalDescription('Copies the folders with everything inside. Files reuse the stored files — nothing is uploaded again. Teacher access is not copied.')
                 ->schema(fn (Collection $records) => [static::folderSelect(true, $records->pluck('id'))])
                 ->action(fn (Collection $records, array $data) => static::run(function () use ($records, $data) {
                     $c = LibraryOps::copyFolders($records->pluck('id')->all(), $data['target'] ? (int) $data['target'] : null);

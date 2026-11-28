@@ -28,6 +28,7 @@ class HealthCheck extends Command
         'queue' => 'Background jobs',
         'disk' => 'Server disk space',
         'scheduler' => 'Scheduled tasks',
+        'backup' => 'Backups',
     ];
 
     public function handle(): int
@@ -83,6 +84,18 @@ class HealthCheck extends Command
                 return "{$pct}% free (".round($free / 1073741824, 1).' GB)';
             }),
             'scheduler' => $this->check(fn () => 'Running'), // this command itself runs from the scheduler
+            'backup' => $this->check(function () {
+                $last = \App\Support\Backups::latest();
+                $limit = (int) config('smko.backups.every_days') + 1;
+                if (! $last) {
+                    return 'No backup yet · next '.\App\Support\Backups::nextRun()->diffForHumans();
+                }
+                if ($last['at']->lt(now()->subDays($limit))) {
+                    throw new \RuntimeException('Last backup was '.$last['at']->diffForHumans().' — over '.$limit.' days ago');
+                }
+
+                return 'Last '.$last['at']->diffForHumans().' ('.number_format($last['size'] / 1048576, 1).' MB) · '.\App\Support\Backups::list()->count().' kept';
+            }),
         ];
 
         $alerts = [];
@@ -125,7 +138,7 @@ class HealthCheck extends Command
             ->map(fn (User $u) => ['chat_id' => $u->telegramChatId(), 'text' => $text])
             ->values()->all();
         try {
-            TelegramRelay::send($messages);
+            TelegramRelay::send($messages, 'monitoring', mb_substr(strtok($text, "\n") ?: 'Monitoring', 0, 100));
         } catch (\Throwable $e) {
             report($e); // the bot itself may be what's down
         }

@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'telegram.webhook' => \App\Http\Middleware\VerifyTelegramWebhook::class,
         ]);
+        // Behind the server's main Caddy (HTTPS ends there).
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

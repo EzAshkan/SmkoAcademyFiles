@@ -70,7 +70,7 @@
             </ul>
             <div class="flex items-center justify-between gap-2 bg-gray-50 px-4 py-2.5 dark:bg-white/5">
                 <label @class(['flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300', 'invisible' => \App\Support\Mode::isPublic()])>
-                    <input type="checkbox" x-model="notify" class="rounded border-gray-300 text-primary-600"> Tell students on Telegram
+                    <input type="checkbox" x-model="notify" class="rounded border-gray-300 text-primary-600"> Tell teachers on Telegram
                 </label>
                 <button type="button" @click="startDrafts()"
                         class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500"

@@ -9,7 +9,7 @@ class ActivityChart extends ChartWidget
 {
     protected static bool $isLazy = false;
 
-    protected static ?int $sort = 3;
+    protected static ?int $sort = 8;
 
     protected ?string $heading = 'Activity — last 30 days';
 

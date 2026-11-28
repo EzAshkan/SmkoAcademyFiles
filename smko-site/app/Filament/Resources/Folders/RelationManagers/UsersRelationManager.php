@@ -49,10 +49,10 @@ class UsersRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('name')
-            ->description('Students listed here can open this folder and everything inside it, until their access ends.')
+            ->description('Teachers listed here can open this folder and everything inside it, until their access ends.')
             ->columns([
                 TextColumn::make('name')->searchable(),
-                TextColumn::make('phone')->searchable(),
+                TextColumn::make('phone')->label('Username')->searchable(),
                 TextColumn::make('expires_at')
                     ->label('Access ends')
                     ->dateTime('M j, Y H:i')
@@ -83,7 +83,7 @@ class UsersRelationManager extends RelationManager
                     ->schema(fn (AttachAction $action) => [$action->getRecordSelect(), static::expiryField()])
                     ->mutateDataUsing(fn (array $data) => $data + ['granted_at' => now()])
                     ->after(fn (array $data) => AdminLog::add('granted', 'access', $this->getOwnerRecord()->id,
-                        'Gave access to '.$this->getOwnerRecord()->path.' for '.count((array) $data['recordId']).' student(s)'
+                        'Gave access to '.$this->getOwnerRecord()->path.' for '.count((array) $data['recordId']).' teacher(s)'
                         .(! empty($data['expires_at']) ? ' until '.$data['expires_at'] : ''))),
             ])
             ->recordActions([

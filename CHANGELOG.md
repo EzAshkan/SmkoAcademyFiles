@@ -8,6 +8,23 @@ All notable changes to SMKO Files (the student file library at files.smkoacademy
 - **Public mode** (`SMKO_PUBLIC_MODE=true`): a second deployment of the same site where anyone can browse and download without an account; only the admin panel needs a login. Students, folder access, Telegram features and the student import are hidden. Views and downloads are counted anonymously; downloads are limited to 60 per minute per visitor.
 - `smko:make-admin` to create the admin login on a deployment without student accounts.
 - `smko:import-media` to load the export of media.smkoacademy.ir (87 folders, 2,822 files already in the bucket under `smko-media/`).
+- **Live deployment** on SMKO's own servers: both sites on Server A behind the existing Traefik (`deploy/server-a/`: Docker image, compose, settings generator), the bot on Server B at `bot.smkoacademy.ir` with a new token.
+- **New login page**: username field, Persian/Arabic digits converted automatically, show/hide password, spinner, live "too many tries" countdown, "Forgot your password?" note linking to @techsupportsa, dark mode.
+- **Error pages** in the site's style: a fantasy 404 with file search, plus 403, 419, 500 and 503. Server errors are sent to admins on Telegram (at most once per kind every 10 minutes).
+- **Search page** for files and folders (only what the visitor may open).
+- **Backups**: database compressed to .zip every 3 days, newest 14 kept, stored outside the containers; dashboard card with "Back up now" and downloads; health check alerts when a backup is overdue.
+- **Dashboard cards**: Online now, Traffic through this server, Bucket usage, Telegram messages.
+
+### Changed
+- The site is for **teachers**: wording changed from "students" throughout; the login asks for a **username** (the same login numbers as before).
+- Previews (audio, video, photos, PDFs) and downloads **stream through the server** with seeking/resume support, so they work even where ParsPack can't be reached directly.
+- Admins still on the starting password are sent to "choose your password" instead of getting a 403; choosing it no longer logs them out of the admin panel.
+- Footer shows "© SMKO Academy" without a year.
+
+### Fixed
+- Admin panel was empty: the web server answered the admin panel's script (`/livewire/livewire.js`) with "not found".
+- The bot's "adopt old Telegram copies" command found nothing (Redis scan started incorrectly); 460 copies were adopted.
+- Docker build on Iranian servers: Alpine packages come from the ArvanCloud mirror.
 
 ## [1.0.0] — 2026-11-19 — Rebuild
 

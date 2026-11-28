@@ -25,16 +25,16 @@ class ListUsers extends ListRecords
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('gray')
                 ->action(function () {
-                    $path = storage_path('app/students-template.xlsx');
+                    $path = storage_path('app/teachers-template.xlsx');
                     StudentImporter::writeTemplate($path);
 
-                    return response()->download($path, 'smko-students-template.xlsx')->deleteFileAfterSend();
+                    return response()->download($path, 'smko-teachers-template.xlsx')->deleteFileAfterSend();
                 }),
             Action::make('import')
                 ->label('Import from Excel')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('gray')
-                ->modalDescription('Columns: name, phone, telegram_id, folders, access_ends. Folders are full paths separated by ";" (e.g. "Adults / E4E1; Teens"). Existing students (same phone) keep their password and get the folders added; new students start with "smko".')
+                ->modalDescription('Columns: name, username, telegram_id, folders, access_ends. Folders are full paths separated by ";" (e.g. "Adults / E4E1; Teens"). Existing teachers (same username) keep their password and get the folders added; new teachers start with "smko".')
                 ->schema([
                     FileUpload::make('file')
                         ->label('Excel or CSV file')
@@ -57,7 +57,7 @@ class ListUsers extends ListRecords
                     $errors = collect($r['errors'])->map(fn ($e, $line) => "Row {$line}: {$e}")->take(15)->implode("\n");
 
                     if (! $data['dry_run']) {
-                        AdminLog::add('imported', 'student', null, "Imported students: {$summary}");
+                        AdminLog::add('imported', 'student', null, "Imported teachers: {$summary}");
                     }
 
                     Notification::make()

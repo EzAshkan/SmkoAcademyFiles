@@ -23,3 +23,17 @@
     white-space: pre-line;
     overflow-wrap: anywhere;
 }
+
+/* Login page: gently floating cards, twinkles and a playing "track" */
+@keyframes smko-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-14px) rotate(1deg); } }
+@keyframes smko-twinkle { 0%, 100% { opacity: .2; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes smko-progress { from { width: 8%; } to { width: 92%; } }
+@keyframes smko-wave { 0%, 60%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(14deg); } 20% { transform: rotate(-8deg); } }
+@keyframes smko-drift { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-18px) rotate(3deg); } }
+.smko-float { animation: smko-float 6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.smko-twinkle { animation: smko-twinkle 3s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.smko-progress { animation: smko-progress 5s ease-in-out infinite alternate; }
+.smko-drift { animation: smko-drift 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .smko-float, .smko-twinkle, .smko-progress, .smko-drift { animation: none; }
+}

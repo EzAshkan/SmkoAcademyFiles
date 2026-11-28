@@ -1,4 +1,6 @@
-{$BOT_DOMAIN:bot.smkoacademy.ir} {
+# The bot's web server (also handles HTTPS). BOT_DOMAINS lists every address it answers on —
+# during the move: "bot.smkoacademy.ir, tel-bot-server.binaries.ir"; afterwards just bot.smkoacademy.ir.
+{$BOT_DOMAINS:bot.smkoacademy.ir} {
     root * /var/www/html/public
 
     php_fastcgi bot-app:9000

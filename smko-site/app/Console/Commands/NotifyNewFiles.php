@@ -62,7 +62,7 @@ class NotifyNewFiles extends Command
             }
         }
 
-        $queued = TelegramRelay::send($messages);
+        $queued = TelegramRelay::send($messages, 'new_files', $announce->count().' new '.str('file')->plural($announce->count()));
         Asset::whereIn('id', $pending->pluck('id'))->update(['notified_at' => now()]);
         $this->info($pending->count().' new files · '.count($messages).' students to notify · '.$queued.' queued on the bot.');
 

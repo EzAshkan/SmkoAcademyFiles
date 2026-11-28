@@ -22,7 +22,7 @@ use OpenSpout\Reader\XLSX\Reader as XlsxReader;
  */
 class StudentImporter
 {
-    public const HEADINGS = ['name', 'phone', 'telegram_id', 'folders', 'access_ends'];
+    public const HEADINGS = ['name', 'username', 'telegram_id', 'folders', 'access_ends'];
 
     /** @return array{created:int, updated:int, grants:int, errors:array<int,string>, rows:int} */
     public static function import(string $path, bool $dryRun = false): array
@@ -36,9 +36,11 @@ class StudentImporter
         }
 
         $head = array_map(fn ($h) => Str::snake(trim(Str::lower((string) $h))), array_shift($rows));
+        // "username" is the login (stored as phone); older files may still say "phone".
+        $head = array_map(fn ($h) => $h === 'username' ? 'phone' : $h, $head);
         foreach (['name', 'phone'] as $required) {
             if (! in_array($required, $head, true)) {
-                $result['errors'][1] = "Missing a \"{$required}\" column. Expected headings: ".implode(', ', self::HEADINGS).'.';
+                $result['errors'][1] = "Missing a \"".($required === 'phone' ? 'username' : $required)."\" column. Expected headings: ".implode(', ', self::HEADINGS).'.';
 
                 return $result;
             }
@@ -60,7 +62,7 @@ class StudentImporter
             $phone = preg_replace('/\s+/', '', $r['phone'] ?? '');
             $name = $r['name'] ?? '';
             if ($phone === '' || $name === '') {
-                $result['errors'][$line] = 'Name and phone are required.';
+                $result['errors'][$line] = 'Name and username are required.';
 
                 continue;
             }

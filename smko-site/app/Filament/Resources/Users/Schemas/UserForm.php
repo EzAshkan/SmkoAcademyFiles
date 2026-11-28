@@ -19,7 +19,7 @@ class UserForm
             ->components([
                 TextInput::make('name')->required()->maxLength(255),
                 TextInput::make('phone')
-                    ->label('Phone / login number')
+                    ->label('Username')
                     ->required()
                     ->maxLength(64)
                     ->rule(fn (?User $record) => Rule::unique('users', 'phone')->ignore($record)),
@@ -38,7 +38,7 @@ class UserForm
                     ->label('Password')
                     ->content(fn (?User $record) => $record
                         ? ($record->must_change_password ? 'Still on the starting password "smko".' : 'Has chosen their own password.')
-                        : 'New students start with the password "smko" and must change it at first login.'),
+                        : 'New teachers start with the password "smko" and must change it at first login.'),
             ]);
     }
 }

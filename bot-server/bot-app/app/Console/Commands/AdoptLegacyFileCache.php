@@ -33,11 +33,12 @@ class AdoptLegacyFileCache extends Command
 
         // Newest copy per file (old versions are timestamps, so the biggest is the latest).
         $latest = [];
-        $cursor = null;
-        $connPrefix = (string) ($redis->client()->getOption(\Redis::OPT_PREFIX) ?? '');
+        $client = $redis->client();               // phpredis
+        $connPrefix = (string) ($client->getOption(\Redis::OPT_PREFIX) ?? '');
+        $iterator = null;                         // phpredis: null = start, 0 = finished
         do {
-            [$cursor, $keys] = $redis->scan($cursor ?? 0, ['match' => $connPrefix.$prefix.'tg_file_id:*', 'count' => 1000]) ?: [0, []];
-            foreach ($keys as $raw) {
+            $keys = $client->scan($iterator, $connPrefix.$prefix.'tg_file_id:*', 1000);
+            foreach ($keys ?: [] as $raw) {
                 $key = substr($raw, strlen($connPrefix.$prefix));
                 if (preg_match('/^tg_file_id:(\d+):(.+)$/', $key, $m)) {
                     if (! isset($latest[$m[1]]) || strcmp($m[2], $latest[$m[1]][0]) > 0) {
@@ -45,7 +46,7 @@ class AdoptLegacyFileCache extends Command
                     }
                 }
             }
-        } while ($cursor);
+        } while ($iterator > 0);
 
         $adopted = 0;
         foreach ($latest as $assetId => [, $key]) {

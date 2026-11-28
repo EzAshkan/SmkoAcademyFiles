@@ -105,28 +105,11 @@ class LibraryController extends Controller
         AssetEvent::record($request->user(), $asset, 'download');
 
         // The bucket forces "attachment" with its own object name (290.mp3, random names…).
-        // Pass files up to the size limit through this site so they save as "Track 1.5.mp3".
+        // Pass files up to the size limit through this site so they save as "Track 1.5.mp3"
+        // (and so visitors only need to reach this site, not ParsPack directly).
         $maxBytes = config('smko.proxy_download_max_mb') * 1048576;
-        if (config('smko.bucket_forces_attachment') && $asset->size_bytes && $asset->size_bytes <= $maxBytes) {
-            $stream = Storage::disk(config('smko.disk'))->readStream($asset->storageKey());
-            abort_unless($stream, 404);
-            $name = $asset->downloadName();
-
-            return response()->stream(function () use ($stream) {
-                @set_time_limit(0);
-                while (! feof($stream)) {
-                    echo fread($stream, 1024 * 256);
-                    flush();
-                }
-                fclose($stream);
-            }, 200, [
-                'Content-Type' => Asset::MIME[$asset->file_ext] ?? 'application/octet-stream',
-                'Content-Length' => $asset->size_bytes,
-                'Content-Disposition' => 'attachment; filename="'.Str::ascii($name).'"; filename*=UTF-8\'\''.rawurlencode($name),
-                'Cache-Control' => 'private, no-transform',
-                'X-Accel-Buffering' => 'no',
-                'X-Content-Type-Options' => 'nosniff',
-            ]);
+        if (config('smko.bucket_forces_attachment') && (! $asset->size_bytes || $asset->size_bytes <= $maxBytes)) {
+            return \App\Support\BucketStream::response($request, $asset, attachment: true);
         }
 
         return redirect()->away($asset->temporaryUrl(config('smko.download_minutes')));
@@ -137,22 +120,10 @@ class LibraryController extends Controller
         $this->authorizeAsset($request, $asset);
         abort_unless($asset->hasFile(), 404);
 
-        // PDFs: pass through this site so the browser shows them instead of downloading
-        // (the bucket objects carry "Content-Disposition: attachment").
-        if ($asset->file_ext === 'pdf' && config('smko.bucket_forces_attachment')) {
-            $stream = Storage::disk(config('smko.disk'))->readStream($asset->storageKey());
-            abort_unless($stream, 404);
-
-            return response()->stream(function () use ($stream) {
-                fpassthru($stream);
-                fclose($stream);
-            }, 200, array_filter([
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="'.Str::ascii($asset->downloadName()).'"',
-                'Content-Length' => $asset->size_bytes,
-                'Cache-Control' => 'private, max-age=600',
-                'X-Content-Type-Options' => 'nosniff',
-            ]));
+        // Stream through this site (with seeking): players then work even for visitors who
+        // can't reach ParsPack directly, and PDFs show instead of downloading.
+        if (config('smko.proxy_previews')) {
+            return \App\Support\BucketStream::response($request, $asset, attachment: false);
         }
 
         return redirect()->away($asset->temporaryUrl(config('smko.download_minutes'), asAttachment: false));
@@ -175,6 +146,25 @@ class LibraryController extends Controller
         ]);
 
         return redirect()->away('https://t.me/'.config('smko.telegram.bot_username').'?start='.$claim->token);
+    }
+
+    /** Search files and folders by name — only what this visitor may open. */
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        $user = $request->user();
+        $folders = collect();
+        $assets = collect();
+
+        if (mb_strlen($q) >= 2) {
+            $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%';
+            $folders = Folder::where('name', 'like', $like)->orderBy('name')->limit(300)->get()
+                ->filter(fn (Folder $f) => FolderTree::canView($user, $f->id))->take(24)->values();
+            $assets = Asset::where('name', 'like', $like)->orderByDesc('created_at')->limit(600)->get()
+                ->filter(fn (Asset $a) => FolderTree::canView($user, $a->folder_id))->take(60)->values();
+        }
+
+        return view('library.search', compact('q', 'folders', 'assets'));
     }
 
     /** Called when a student opens a file's preview (statistics + clears its "New" badge). */

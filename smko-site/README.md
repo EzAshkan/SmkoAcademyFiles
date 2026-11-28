@@ -28,7 +28,7 @@ cd F:/work/files/smko-site
 F:/work/tools/php/php.exe artisan serve --port=8010
 ```
 
-Open http://127.0.0.1:8010 (port 8000 is used by another program on this PC). Local test accounts (`database/seeders/LocalTestAccountsSeeder.php`): `test-admin` and `test-student`, password `smko`. Never run that seeder on the live server.
+Open http://127.0.0.1:8010 (port 8000 is used by another program on this PC). Local test accounts (`database/seeders/LocalTestAccountsSeeder.php`): `9000001` (admin) and `9000002` (student), password `smko`. Never run that seeder on the live server.
 
 Run the tests:
 

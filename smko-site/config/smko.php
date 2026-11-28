@@ -23,11 +23,22 @@ return [
     // Largest file today: under 100 MB.
     'proxy_download_max_mb' => (int) env('SMKO_PROXY_DOWNLOAD_MAX_MB', 150),
 
+    // Previews (audio, video, photos, PDFs) stream through this site instead of linking to the
+    // bucket, so they work even where ParsPack can't be reached directly. Supports seeking.
+    'proxy_previews' => (bool) env('SMKO_PROXY_PREVIEWS', true),
+
     // Files added in the last N days get a "New" badge and show under "Recently added".
     'new_days' => (int) env('SMKO_NEW_DAYS', 14),
 
     // Minutes a student's download / preview link stays valid.
     'download_minutes' => (int) env('SMKO_DOWNLOAD_MINUTES', 45),
+
+    // Database backups: compressed .zip, every N days at 03:00, newest N kept.
+    'backups' => [
+        'path' => env('SMKO_BACKUP_PATH'),          // default storage/app/backups
+        'every_days' => (int) env('SMKO_BACKUP_EVERY_DAYS', 3),
+        'keep' => (int) env('SMKO_BACKUP_KEEP', 14),
+    ],
 
     'telegram' => [
         'bot_username' => env('TELEGRAM_BOT_USERNAME', 'SAFilesbot'),

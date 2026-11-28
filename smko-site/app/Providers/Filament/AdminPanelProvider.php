@@ -27,7 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
             // No separate admin login: admins sign in on the normal /login page.
-            ->brandName('SMKO Files · Admin')
+            ->brandName(fn () => config('app.name').' · Admin')
             // Pages switch without a full reload, so background uploads keep running while you navigate.
             ->spa()
             ->renderHook(\Filament\View\PanelsRenderHook::HEAD_END, fn () => view('filament.uploader-script'))
@@ -43,7 +43,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->widgets([
                 \App\Filament\Widgets\SystemHealth::class,
+                \App\Filament\Widgets\BackupStatus::class,
+                \App\Filament\Widgets\OnlineNow::class,
                 \App\Filament\Widgets\ActivityStats::class,
+                \App\Filament\Widgets\TrafficOverview::class,
+                \App\Filament\Widgets\BucketUsage::class,
+                \App\Filament\Widgets\TelegramActivity::class,
                 \App\Filament\Widgets\ActivityChart::class,
                 \App\Filament\Widgets\TopFiles::class,
             ])
@@ -57,6 +62,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                \App\Http\Middleware\AdminMustChoosePassword::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

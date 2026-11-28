@@ -45,8 +45,8 @@ class AnnouncementResource extends Resource
             ]),
             Section::make('Who sees it')->visible(fn () => \App\Support\Mode::hasStudents())->schema([
                 Select::make('folder_ids')
-                    ->label('Students with access to')
-                    ->helperText('Leave empty to reach every student.')
+                    ->label('Teachers with access to')
+                    ->helperText('Leave empty to reach every teacher.')
                     ->multiple()
                     ->searchable()
                     ->options(fn () => FolderTree::options()),
@@ -86,7 +86,7 @@ class AnnouncementResource extends Resource
                     ->icon('heroicon-o-paper-airplane')
                     ->visible(fn (Announcement $r) => \App\Support\Mode::hasStudents() && ! $r->telegram_sent_at)
                     ->requiresConfirmation()
-                    ->modalDescription(fn (Announcement $r) => 'This sends the announcement to '.$r->audience()->filter(fn ($u) => $u->telegramChatId())->count().' students on Telegram. It cannot be undone.')
+                    ->modalDescription(fn (Announcement $r) => 'This sends the announcement to '.$r->audience()->filter(fn ($u) => $u->telegramChatId())->count().' teachers on Telegram. It cannot be undone.')
                     ->action(function (Announcement $r) {
                         $r->update(['send_telegram' => true]);
                         SendAnnouncement::dispatch($r->id);

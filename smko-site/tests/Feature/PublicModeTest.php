@@ -23,7 +23,7 @@ class PublicModeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['smko.public_mode' => true, 'smko.prefix' => 'downloads']);
+        config(['smko.public_mode' => true, 'smko.prefix' => 'downloads', 'smko.proxy_previews' => false, 'smko.bucket_forces_attachment' => false]);
         FolderTree::flush();
         NewFiles::flush();
         Storage::fake('bucket');
@@ -70,6 +70,15 @@ class PublicModeTest extends TestCase
             'folder_id' => $this->book->id, 'filename' => 'new.mp3', 'size' => 10, 'md5' => md5('x'), 'notify' => true,
         ])->assertOk();
         $this->assertFalse((bool) \App\Models\Upload::first()->notify);
+    }
+
+    public function test_admin_on_starting_password_is_sent_to_choose_one_instead_of_403(): void
+    {
+        User::create(['name' => 'Admin', 'phone' => '0913', 'password' => User::DEFAULT_PASSWORD, 'is_admin' => true, 'must_change_password' => true]);
+        $this->post('/login', ['phone' => '0913', 'password' => 'smko'])->assertRedirect(route('password.edit'));
+        $this->get('/admin')->assertRedirect(route('password.edit'));
+        $this->put('/password', ['password' => 'new-admin-pass', 'password_confirmation' => 'new-admin-pass'])->assertRedirect();
+        $this->get('/admin')->assertOk();
     }
 
     public function test_normal_mode_still_requires_login(): void

@@ -12,7 +12,7 @@ class ActivityStats extends StatsOverviewWidget
 {
     protected static bool $isLazy = false;
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 4;
 
     protected ?string $heading = 'Last 7 days';
 
@@ -38,7 +38,7 @@ class ActivityStats extends StatsOverviewWidget
             : null;
 
         return [
-            $first ?? Stat::make('Active students', $active)
+            $first ?? Stat::make('Active teachers', $active)
                 ->description("of {$students} logged in · {$changed} have set their own password")
                 ->icon('heroicon-o-users'),
             Stat::make('File views', DB::table('asset_events')->where('type', 'view')->where('created_at', '>=', $since)->count())

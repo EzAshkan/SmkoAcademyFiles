@@ -33,7 +33,7 @@ class EditFolder extends EditRecord
                     ? FolderResource::getUrl('edit', ['record' => $this->record->parent_id])
                     : FolderResource::getUrl('index')),
             Action::make('view')
-                ->label('View as student')
+                ->label('View as teacher')
                 ->icon('heroicon-o-eye')
                 ->color('gray')
                 ->url(fn () => route('library.folder', $this->record), shouldOpenInNewTab: true),

@@ -15,7 +15,8 @@ class LibraryAccess
     public function handle(Request $request, Closure $next)
     {
         if (Mode::isPublic()) {
-            return $next($request);
+            // Visitors pass; a logged-in admin still on the starting password chooses one first.
+            return $request->user()?->must_change_password ? redirect()->route('password.edit') : $next($request);
         }
         if (! $request->user()) {
             return $request->expectsJson() ? abort(401) : redirect()->guest(route('login'));

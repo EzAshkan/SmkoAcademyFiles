@@ -18,6 +18,17 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+    /** Username as typed → as stored: Persian/Arabic digits to 0-9, spaces removed ("۰۹۱۲ ۳۴۵" → "0912345"). */
+    public static function normalisePhone(string $phone): string
+    {
+        $phone = strtr($phone, [
+            '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+        ]);
+
+        return preg_replace('/\s+/u', '', $phone);
+    }
+
     public function login(Request $request)
     {
         $data = $request->validate([
@@ -25,13 +36,16 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $phone = preg_replace('/\s+/', '', $data['phone']);
+        $phone = static::normalisePhone($data['phone']);
         // 5 tries per minute per number, and 30 per minute per IP address.
         $keys = ['login:phone:'.Str::lower($phone), 'login:ip:'.$request->ip()];
         foreach ([[$keys[0], 5], [$keys[1], 30]] as [$key, $max]) {
             if (RateLimiter::tooManyAttempts($key, $max)) {
+                $seconds = RateLimiter::availableIn($key);
+                $request->session()->flash('lockout_seconds', $seconds); // live countdown on the login page
+
                 throw ValidationException::withMessages([
-                    'phone' => 'Too many attempts. Try again in '.RateLimiter::availableIn($key).' seconds.',
+                    'phone' => "Too many tries, please wait {$seconds} seconds.",
                 ]);
             }
         }
@@ -40,12 +54,17 @@ class AuthController extends Controller
             RateLimiter::hit($keys[0]);
             RateLimiter::hit($keys[1]);
 
-            throw ValidationException::withMessages(['phone' => 'Wrong number or password.']);
+            throw ValidationException::withMessages(['phone' => 'Wrong username or password.']);
         }
 
         RateLimiter::clear($keys[0]);
         $request->user()->forceFill(['last_login_at' => now(), 'login_count' => $request->user()->login_count + 1])->saveQuietly();
         $request->session()->regenerate();
+
+        // Still on the starting password: choose one first (also before the admin panel).
+        if ($request->user()->must_change_password) {
+            return redirect()->route('password.edit');
+        }
 
         return redirect()->intended(route('library.home'));
     }
@@ -81,6 +100,9 @@ class AuthController extends Controller
             'password' => $request->password,
             'must_change_password' => false,
         ])->save();
+
+        // Keep this session valid: the admin panel's session check compares the password hash.
+        $request->session()->put('password_hash_'.Auth::getDefaultDriver(), $user->getAuthPassword());
 
         return redirect()->route('library.home')->with('status', 'Your password has been changed.');
     }

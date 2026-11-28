@@ -44,7 +44,7 @@ class AdminLogResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('subject_type')->label('About')->options([
-                    'folder' => 'Folders', 'file' => 'Files', 'student' => 'Students', 'access' => 'Access', 'announcement' => 'Announcements',
+                    'folder' => 'Folders', 'file' => 'Files', 'student' => 'Teachers', 'access' => 'Access', 'announcement' => 'Announcements',
                 ]),
                 SelectFilter::make('action')->options([
                     'created' => 'Created', 'updated' => 'Updated', 'deleted' => 'Deleted', 'granted' => 'Access given',

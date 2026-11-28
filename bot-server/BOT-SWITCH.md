@@ -8,9 +8,19 @@ Changes in this copy of the bot:
 - **Webhook security check is back on** (the `X-Telegram-Bot-Api-Secret-Token` header must match `TELEGRAM_WEBHOOK_SECRET`).
 - **New endpoint** `POST /api/internal/send` so the website can send messages (new-file alerts, announcements, monitoring alerts).
 
+## Server
+
+The live bot already runs on this server (82.115.21.124, `/root/bot-server`); its own Caddy holds
+ports 80/443. During the move it answers on both addresses (`BOT_DOMAINS` in `.env`):
+`bot.smkoacademy.ir, tel-bot-server.binaries.ir`. Once the webhook points at the new address and
+everything works, set `BOT_DOMAINS=bot.smkoacademy.ir`.
+
+Telegram's HTTPS API (api.telegram.org) is not reachable from this server; the bot talks to Telegram
+through its local Bot API container (`bot-api`), which works.
+
 ## Steps
 
-1. **DNS:** add an `A` record `bot.smkoacademy.ir` → the bot server's IP.
+1. **DNS:** add an `A` record `bot.smkoacademy.ir` → the bot server's IP (DNS only, no CDN proxy). ✅ done
 2. **Your own keys:**
    - @BotFather → `/revoke` → new token → `TELEGRAM_BOT_TOKEN` in `.env`. (The bot and its saved file copies stay the same; only the key changes.)
    - my.telegram.org → API development tools → your own `TG_API_ID` / `TG_API_HASH` (also in `docker-compose.yml` under `bot-api`).
