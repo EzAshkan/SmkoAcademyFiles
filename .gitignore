@@ -23,3 +23,8 @@
 /bot-server/bot-app/vendor/
 /bot-server/bot-app/node_modules/
 /bot-server/bot-app/bootstrap/cache/*.php
+
+# Archives (may contain exports / personal data)
+*.zip
+*.rar
+*.7z
